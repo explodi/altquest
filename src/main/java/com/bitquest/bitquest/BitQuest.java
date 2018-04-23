@@ -126,6 +126,8 @@ public class  BitQuest extends JavaPlugin {
     private Map<String, CommandAction> modCommands;
     private Player[] moderators;
 
+
+
     @Override
     public void onEnable() {
         log("BitQuest starting");
@@ -203,6 +205,7 @@ public class  BitQuest extends JavaPlugin {
         commands.put("donate", new DonateCommand(this));
         commands.put("profession", new ProfessionCommand(this));
         commands.put("spawn", new SpawnCommand(this));
+        commands.put("currency", new CurrencyCommand(this));
         modCommands = new HashMap<String, CommandAction>();
         modCommands.put("butcher", new ButcherCommand());
         modCommands.put("killAllVillagers", new KillAllVillagersCommand(this));
@@ -265,6 +268,41 @@ public class  BitQuest extends JavaPlugin {
 
         return new JSONObject(); // just give them an empty object
     }
+    /* need to updatedscoreboard to display what currecny player is using
+	public void updateScoreboard(final Player player) throws ParseException, org.json.simple.parser.ParseException, IOException {
+        final User user=new User(this, player);
+ ScoreboardManager scoreboardManager;
+                Scoreboard walletScoreboard;
+                Objective walletScoreboardObjective;
+                scoreboardManager = Bukkit.getScoreboardManager();
+                walletScoreboard= scoreboardManager.getNewScoreboard();
+                walletScoreboardObjective = walletScoreboard.registerNewObjective("wallet","dummy");
+
+                walletScoreboardObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+                walletScoreboardObjective.setDisplayName(ChatColor.GOLD + ChatColor.BOLD.toString() + "Bit" + ChatColor.GRAY + ChatColor.BOLD.toString() + "Quest");
+        if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("BTC"))
+{             
+	Score score = walletScoreboardObjective.getScore(ChatColor.GREEN +BitQuest.DENOMINATION_NAME+":"); //Get a fake offline player
+	
+
+        score.setScore((int) (user.wallet.getBalance()/DENOMINATION_FACTOR));
+        player.setScoreboard(walletScoreboard);
+	}//end btc here
+	else if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("emerald")){ 
+	walletScoreboardObjective.setDisplayName(ChatColor.GOLD + ChatColor.BOLD.toString() + "Bit" + ChatColor.GRAY + ChatColor.BOLD.toString() + "Quest");
+	Score score = walletScoreboardObjective.getScore(ChatColor.GREEN + "Ems:"); //Get a fake offline player
+	
+	int EmAmount=countEmeralds(player);
+		
+	
+        //int final_balance=Integer.parseInt(REDIS.get("final_balance:"+player.getUniqueId().toString()));
+
+
+        score.setScore(EmAmount);
+        player.setScoreboard(walletScoreboard);
+	}//end emerald here
+    } */
     public void updateScoreboard(final Player player) throws ParseException, org.json.simple.parser.ParseException, IOException {
         final User user=new User(this, player);
 
@@ -485,6 +523,13 @@ public class  BitQuest extends JavaPlugin {
     }
 
     public void claimLand(final String name, Chunk chunk, final Player player) throws ParseException, org.json.simple.parser.ParseException, IOException {
+	String tempchunk="";
+	if (player.getLocation().getWorld().getName().equals("world")){
+        tempchunk="chunk";
+	}//end world lmao @bitcoinjake09
+	else if (player.getLocation().getWorld().getName().equals("world_nether")){
+	tempchunk="netherchunk";
+	}//end nether @bitcoinjake09
         // check that land actually has a name
         final int x = chunk.getX();
         final int z = chunk.getZ();
@@ -502,21 +547,23 @@ public class  BitQuest extends JavaPlugin {
                         player.sendMessage(ChatColor.RED + "You cannot name your land that.");
                         return;
                     }
-                    if (REDIS.get("chunk" + x + "," + z + "owner") == null) {
+                    if (REDIS.get(tempchunk+ "" + x + "," + z + "owner") == null) {
+			final String chunkName = tempchunk;
                         final User user = new User(this, player);
                         player.sendMessage(ChatColor.YELLOW + "Claiming land...");
                         BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
                         final BitQuest bitQuest = this;
-
+			//REDIS.set("currency"+player.getUniqueId().toString(), "emerald");
+			if (REDIS.get("currency"+player.getUniqueId().toString())==("bitcoin")){
                         user.wallet.getBalance(0, new Wallet.GetBalanceCallback() {
                             @Override
                             public void run(Long balance) {
                                 try {
                                     if (balance >= LAND_PRICE) {
-                                        if (user.wallet.move("land", LAND_PRICE)) {
+                                        if (user.wallet.move("land", BitQuest.LAND_PRICE)) {
 
-                                            BitQuest.REDIS.set("chunk" + x + "," + z + "owner", player.getUniqueId().toString());
-                                            BitQuest.REDIS.set("chunk" + x + "," + z + "name", name);
+                                            BitQuest.REDIS.set(chunkName+ "" + x + "," + z + "owner", player.getUniqueId().toString());
+                                            BitQuest.REDIS.set(chunkName+ "" + x + "," + z + "name", name);
                                             land_owner_cache=new HashMap();
                                             land_name_cache=new HashMap();
                                             land_unclaimed_cache=new HashMap();
@@ -555,11 +602,62 @@ public class  BitQuest extends JavaPlugin {
                                 }
                             }
                         });
-                    } else if (REDIS.get("chunk" + x + "," + z + "owner").equals(player.getUniqueId().toString()) || isModerator(player)) {
+			}//end of BTC buy start of Emerald Buy by BitcoinJake09
+			if (REDIS.get("currency"+player.getUniqueId().toString())==("emerald")){
+				scheduler.runTask(this, new Runnable() {
+                            @Override
+                            public void run() {
+                                // A villager is born
+                                try {
+                                  //use remove emearlds to buy land
+                                    if (((removeEmeralds(player,(int) Math.ceil((BitQuest.LAND_PRICE) / 100))) == true)) {	
+					   
+                                        BitQuest.REDIS.set(chunkName+ "" + x + "," + z + "owner", player.getUniqueId().toString());
+                                        BitQuest.REDIS.set(chunkName+ "" + x + "," + z + "name", name);
+                                        player.sendMessage(ChatColor.GREEN + "Congratulations! You're now the owner of " + name + "!");
+                                        player.sendMessage(ChatColor.YELLOW + "Price was "+(BitQuest.LAND_PRICE / 100)+" Emeralds");
+
+					    land_owner_cache=new HashMap();
+                                            land_name_cache=new HashMap();
+                                            land_unclaimed_cache=new HashMap();
+                                          
+                                            //updateScoreboard(player);
+                                        if (bitQuest.messageBuilder != null) {
+
+                                            // Create an event
+                                            org.json.JSONObject sentEvent = bitQuest.messageBuilder.event(player.getUniqueId().toString(), "Claim", null);
+                                           
+                                            ClientDelivery delivery = new ClientDelivery();
+                                            delivery.addMessage(sentEvent);
+                                            //delivery.addMessage(sentCharge);
+
+
+                                            MixpanelAPI mixpanel = new MixpanelAPI();
+                                            mixpanel.deliver(delivery);
+                                        }
+                                    } 
+					
+					else {
+                                        //int balance = new User(player).wallet.balance();
+                                        if (countEmeralds(player) < (BitQuest.LAND_PRICE/100)) {
+                                            player.sendMessage(ChatColor.RED + "You don't have enough Emeralds! You need " + ChatColor.BOLD + Math.ceil(((BitQuest.LAND_PRICE/100) - countEmeralds(player))) + ChatColor.RED + " more emeralds.");
+                                        } else {
+                                            player.sendMessage(ChatColor.RED + "Claim payment failed. Please try again later.");
+                                        }
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                };
+                            }
+                        });		
+
+			}//end of Emerald Buy
+                    } else if (REDIS.get(tempchunk+ "" + x + "," + z + "owner").equals(player.getUniqueId().toString()) || isModerator(player)) {
                         if (name.equals("abandon")) {
                             // Abandon land
-                            BitQuest.REDIS.del("chunk" + x + "," + z + "owner");
-                            BitQuest.REDIS.del("chunk" + x + "," + z + "name");
+                            BitQuest.REDIS.del(tempchunk+ "" + x + "," + z + "owner");
+                            BitQuest.REDIS.del(tempchunk+ "" + x + "," + z + "name");
+			    BitQuest.REDIS.del(tempchunk+ "" + x + "," + z + "permissions");
                         } else if (name.startsWith("transfer ") && name.length() > 9) {
                             // If the name starts with "transfer " and has at least one more character,
                             // transfer land
@@ -568,18 +666,18 @@ public class  BitQuest extends JavaPlugin {
 
                             if (REDIS.exists("uuid:" + newOwner)) {
                                 String newOwnerUUID = REDIS.get("uuid:" + newOwner);
-                                BitQuest.REDIS.set("chunk" + x + "," + z + "owner", newOwnerUUID);
+                                BitQuest.REDIS.set(tempchunk+ "" + x + "," + z + "owner", newOwnerUUID);
                                 player.sendMessage(ChatColor.GREEN + "This land now belongs to " + newOwner);
                             } else {
                                 player.sendMessage(ChatColor.RED + "Could not find " + newOwner + ". Did you misspell their name?");
                             }
 
-                        } else if (BitQuest.REDIS.get("chunk" + x + "," + z + "name").equals(name)) {
+                        } else if (BitQuest.REDIS.get(tempchunk+ "" + x + "," + z + "name").equals(name)) {
                             player.sendMessage(ChatColor.RED + "You already own this land!");
                         } else {
                             // Rename land
                             player.sendMessage(ChatColor.GREEN + "You renamed this land to " + name + ".");
-                            BitQuest.REDIS.set("chunk" + x + "," + z + "name", name);
+                            BitQuest.REDIS.set(tempchunk+ "" + x + "," + z + "name", name);
                         }
                     }
                 } else {
@@ -593,7 +691,14 @@ public class  BitQuest extends JavaPlugin {
         }
     }
     public boolean isOwner(Location location, Player player) {
-        String key="chunk" + location.getChunk().getX() + "," + location.getChunk().getZ() + "owner";
+	String chunk="";
+	if (location.getWorld().getName().equals("world")){
+        chunk="chunk";
+	}//end world lmao @bitcoinjake09
+	else if (location.getWorld().getName().equals("world_nether")){
+	chunk="netherchunk";
+	}//end nether @bitcoinjake09
+        String key=chunk+ "" + location.getChunk().getX() + "," + location.getChunk().getZ() + "owner";
         if(land_owner_cache.containsKey(key)) {
             if(land_owner_cache.get(key).equals(player.getUniqueId().toString())) {
                 return true;
@@ -611,16 +716,24 @@ public class  BitQuest extends JavaPlugin {
     public boolean canBuild(Location location, Player player) {
         // returns true if player has permission to build in location
         // TODO: Find out how are we gonna deal with clans and locations, and how/if they are gonna share land resources
+	String chunk="";
+	if (location.getWorld().getName().equals("world")){
+        chunk="chunk";
+	}//end world lmao @bitcoinjake09
+	else if (location.getWorld().getName().equals("world_nether")){
+	chunk="netherchunk";
+	}//end nether @bitcoinjake09
         if (!location.getWorld().getEnvironment().equals(Environment.NORMAL)) {
             // If theyre not in the overworld, they cant build
             return false;
         } else if (landIsClaimed(location)) {
             if(isOwner(location,player)) {
                 return true;
-            } else if(landPermissionCode(location).equals("p")) {
+            } else if((landPermissionCode(location).equals("p"))||(landPermissionCode(location).equals("pv"))) {
                 return true;
             } else if(landPermissionCode(location).equals("c")) {
-                String owner_uuid=REDIS.get("chunk" + location.getChunk().getX() + "," + location.getChunk().getZ() + "owner");
+		//changed redis.get("chunk" to redis.get(chunk the variable @bitcoinjake09
+                String owner_uuid=REDIS.get(chunk+ "" + location.getChunk().getX() + "," + location.getChunk().getZ() + "owner");
                 String owner_clan=REDIS.get("clan:"+owner_uuid);
                 String player_clan=REDIS.get("clan:"+player.getUniqueId().toString());
                 if(owner_clan.equals(player_clan)) {
@@ -639,8 +752,17 @@ public class  BitQuest extends JavaPlugin {
         // permission codes:
         // p = public
         // c = clan
+	// v = PvP(private cant build) by @bitcoinjake09
+	// pv= public PvP(can build) by @bitcoinjake09
         // n = no permissions (private)
-        String key = "chunk"+location.getChunk().getX()+","+location.getChunk().getZ()+"permissions";
+	String chunk="";
+	if (location.getWorld().getName().equals("world")){
+        chunk="chunk";
+	}//end world lmao @bitcoinjake09
+	else if (location.getWorld().getName().equals("world_nether")){
+	chunk="netherchunk";
+	}//end nether @bitcoinjake09
+        String key = chunk+""+location.getChunk().getX()+","+location.getChunk().getZ()+"permissions";
         if(land_permission_cache.containsKey(key)) {
             return land_permission_cache.get(key);
         } else if(REDIS.exists(key)) {
@@ -742,7 +864,13 @@ public class  BitQuest extends JavaPlugin {
         });
     };
     public boolean landIsClaimed(Location location) {
-        String key="chunk"+location.getChunk().getX()+","+location.getChunk().getZ()+"owner";
+        String key="";
+	if (location.getWorld().getName().equals("world")){
+        key="chunk"+location.getChunk().getX()+","+location.getChunk().getZ()+"owner";
+	}//end world lmao @bitcoinjake09
+	else if (location.getWorld().getName().equals("world_nether")){
+	key="netherchunk"+location.getChunk().getX()+","+location.getChunk().getZ()+"owner";
+	}//end nether @bitcoinjake09
         if(land_unclaimed_cache.containsKey(key)) {
             return false;
         } else if (land_owner_cache.containsKey(key)) {
@@ -833,5 +961,94 @@ public class  BitQuest extends JavaPlugin {
     public void reset_rate_limits() {
         rate_limit=false;
     }
+
+	// the isPvP function by @bitcoinjake09
+    public boolean isPvP(Location location) {
+	if ((landPermissionCode(location).equals("v")==true)||(landPermissionCode(location).equals("pv")==true)) {
+			return true;// returns true. it is a pvp or public pvp is true
+		}
+               return false;//not pvp
+    }
+// end isPvP by @bitcoinjake09
+    public static int countEmeralds(Player player) {
+	//This checks how many EMERALD or EMERALD_BLOCK are in players DIRECT inventory... could possibly check for shulkerboxes and get content of shulker to check for emeralds?
+        ItemStack[] items = player.getInventory().getContents();
+        int amount = 0;
+        for (int i=0; i<player.getInventory().getSize(); i++) {
+	ItemStack TempStack = items[i];	
+	if ((TempStack != null) && (TempStack.getType() != Material.AIR)){          
+	if (TempStack.getType().toString() == "EMERALD_BLOCK") {
+                amount += (TempStack.getAmount()*9);
+            }
+	else if (TempStack.getType().toString() == "EMERALD") {
+                amount += TempStack.getAmount();
+            }
+		}
+        }
+        return amount;
+    }//end count emerald in player inventory by @bitcoinjake09
+    public boolean removeEmeralds(Player player,int amount) {
+	//this could be written more clearly sorry :/
+	 int EmCount = countEmeralds(player);//how many ems player has
+	 int LessEmCount = countEmeralds(player)-amount;// how many ems player should have when done.
+	 double TempAmount=(double)amount;
+	int EmsBack=0;
+	ItemStack[] items = player.getInventory().getContents();
+	if (countEmeralds(player)>=amount){	
+		while(TempAmount>0){		
+		for (int i=0; i<player.getInventory().getSize(); i++) {
+			ItemStack TempStack = items[i];	
+			
+			if ((TempStack != null) && (TempStack.getType() != Material.AIR)){          	
+			
+			if ((TempStack.getType().toString() == "EMERALD_BLOCK")&&(TempAmount>=9)) {
+		    player.getInventory().removeItem(new ItemStack(Material.EMERALD_BLOCK, 1));	
+        			TempAmount=TempAmount-9;
+				}
+			if ((TempStack.getType().toString() == "EMERALD_BLOCK")&&(TempAmount<9)) {
+		    player.getInventory().removeItem(new ItemStack(Material.EMERALD_BLOCK, 1));	
+				EmsBack=(9-(int)TempAmount);  //if 8, ems back = 1      		
+				TempAmount=TempAmount-TempAmount;
+				if (EmsBack>0) {player.getInventory().addItem(new ItemStack(Material.EMERALD, EmsBack));}
+				}
+			if ((TempStack.getType().toString() == "EMERALD")&&(TempAmount>=1)) {
+      		          player.getInventory().removeItem(new ItemStack(Material.EMERALD, 1));		
+        			TempAmount=TempAmount-1;
+				}
+			
+			}//end if != Material.AIR
+			
+		
+	}// end for loop
+	}//end while loop
+	}//end (EmCount>=amount)
+	EmCount = countEmeralds(player);
+	if ((EmCount==LessEmCount)||(TempAmount==0))
+	return true;	
+ 	return false;
+    }//end of remove emeralds
+//start addemeralds to inventory
+    public boolean addEmeralds(Player player,int amount){
+	//checks how many to add to inv and gives blocks first till less than 9 then gives ems.
+	int EmCount = countEmeralds(player);
+	 int moreEmCount = countEmeralds(player)+amount;
+	 double bits = (double)amount;
+	 double TempAmount=(double)amount;
+	int EmsBack=0;
+		while(TempAmount>=0){		
+			    	if (TempAmount>=9){		
+				TempAmount=TempAmount-9;
+				player.getInventory().addItem(new ItemStack(Material.EMERALD_BLOCK, 1));
+				}
+				if (TempAmount<9){	
+				TempAmount=TempAmount-1;
+				player.getInventory().addItem(new ItemStack(Material.EMERALD, 1));
+				}
+			EmCount = countEmeralds(player);
+			if ((EmCount==moreEmCount))
+			return true;
+			}//end while loop
+	return false;
+}
 }
 
