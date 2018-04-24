@@ -72,6 +72,8 @@ public class EntityEvents implements Listener {
     private static final List<EntityType> PROTECTED_ENTITIES = Arrays.asList(EntityType.ARMOR_STAND, EntityType.ITEM_FRAME,
             EntityType.PAINTING, EntityType.ENDER_CRYSTAL);
     
+    private int pvar = 0; //for pvp plot display use. bitcoinjake09    
+
     public EntityEvents(BitQuest plugin) {
         bitQuest = plugin;
 
@@ -103,8 +105,7 @@ public class EntityEvents implements Listener {
         if(BitQuest.REDIS.sismember("banlist",event.getPlayer().getUniqueId().toString())) {
             event.disallow(PlayerLoginEvent.Result.KICK_OTHER,PROBLEM_MESSAGE);
         }
-       
-
+	
     }
 
 
@@ -144,6 +145,12 @@ public class EntityEvents implements Listener {
                 String clan = BitQuest.REDIS.get("clan:"+player.getUniqueId().toString());
                 player.setPlayerListName(ChatColor.GOLD + "[" + clan + "] " + ChatColor.WHITE + player.getName());
             }
+	//add [MOD] to mods on the TAB player list by @BitcoinJake09
+       	if (bitQuest.isModerator(player)) {
+               
+                player.sendMessage(ChatColor.YELLOW + "You are a moderator on this server.");
+		player.setPlayerListName(ChatColor.RED + "[MOD] " + player.getPlayerListName());
+		}
 
             // Prints the user balance
             bitQuest.setTotalExperience(player);
@@ -236,47 +243,43 @@ public class EntityEvents implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) throws ParseException, org.json.simple.parser.ParseException, IOException {
+        if((bitQuest.isPvP(event.getPlayer().getLocation())==true)&&(pvar==0)) {event.getPlayer().sendMessage(ChatColor.RED+"IN PVP ZONE");pvar++;}
         if(event.getFrom().getChunk()!=event.getTo().getChunk()) {
-            if(!event.getFrom().getWorld().getName().endsWith("_nether") && !event.getFrom().getWorld().getName().endsWith("_end")) {
-                // announce new area
+		pvar = 0;
+            bitQuest.updateScoreboard(event.getPlayer());
+            if(!event.getFrom().getWorld().getName().endsWith("_end")) {
+		String chunkname = "";
+		if (event.getPlayer().getWorld().getName().equals("world")){
+		chunkname="chunk";
+		} else if (event.getPlayer().getWorld().getName().equals("world_nether")){
+		chunkname="netherchunk";
+		} //gets which chunks for which world @bitcoinjake09
                 int x1=event.getFrom().getChunk().getX();
                 int z1=event.getFrom().getChunk().getZ();
 
                 int x2=event.getTo().getChunk().getX();
                 int z2=event.getTo().getChunk().getZ();
-                String name1="the wilderness";
-                String name2="the wilderness";
-                String key1="chunk"+x1+","+z1+"name";
-                String key2="chunk"+x2+","+z2+"name";
-                if(bitQuest.landIsClaimed(event.getFrom())) {
-                    if(bitQuest.land_name_cache.containsKey(key1)) {
-                        name1=bitQuest.land_name_cache.get(key1);
-                    } else {
-                        name1=BitQuest.REDIS.get(key1)!= null ? BitQuest.REDIS.get(key1) : "the wilderness";
-                        bitQuest.land_name_cache.put(key1,name1);
-                    }
-                }
-                if(bitQuest.landIsClaimed(event.getTo())) {
-                    if(bitQuest.land_name_cache.containsKey(key2)) {
-                        name2=bitQuest.land_name_cache.get(key2);
-                    } else {
-                        name2=BitQuest.REDIS.get(key2)!= null ? BitQuest.REDIS.get(key2) : "the wilderness";
-                        bitQuest.land_name_cache.put(key2,name2);
-                    }
-                }
 
+                String name1=BitQuest.REDIS.get(chunkname+""+x1+","+z1+"name")!= null ? BitQuest.REDIS.get(chunkname+""+x1+","+z1+"name") : "the wilderness";
+                String name2=BitQuest.REDIS.get(chunkname+""+x2+","+z2+"name")!= null ? BitQuest.REDIS.get(chunkname+""+x2+","+z2+"name") : "the wilderness";
 
-                if(!name1.equals(name2)) {
-                    if(name2.equals("the wilderness")){
-                        event.getPlayer().sendMessage(ChatColor.GRAY+"[ "+name2+" ]");
-                    }else{
-                        event.getPlayer().sendMessage(ChatColor.YELLOW+"[ "+name2+" ]");
-                    }
-                }
-            }
-        }
+                if(name1==null) name1="the wilderness";
+                 if(name2==null) name2="the wilderness";
 
+		
+		
+                 if(!name1.equals(name2)) {
+                     if(name2.equals("the wilderness")){
+                         event.getPlayer().sendMessage(ChatColor.GRAY+"[ "+name2+" ]");
+                     }else{
+		
+                         event.getPlayer().sendMessage(ChatColor.YELLOW+"[ "+name2+" ]");			
+			
+                     }
+                 }
+             }
 
+	} 
     }
 
     @EventHandler
@@ -390,12 +393,14 @@ public class EntityEvents implements Listener {
                 final EntityDamageByEntityEvent damage = (EntityDamageByEntityEvent) e.getEntity().getLastDamageCause();
                 if (damage.getDamager() instanceof Player && level >= 1) {
                     // roll a D20
-
+                    final Player player = (Player) damage.getDamager();
                     Long money = Math.min(BitQuest.rand(1,level),BitQuest.rand(1,level))*bitQuest.DENOMINATION_FACTOR;
                     int dice=BitQuest.rand(1,100);
+		//btc loot modified with flag by @BitcoinJake09
+		if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitcoin")){
                     if(bitQuest.wallet_balance_cache>100*bitQuest.DENOMINATION_FACTOR) dice=BitQuest.rand(1,20);
                     if(bitQuest.wallet_balance_cache>1000*bitQuest.DENOMINATION_FACTOR) dice=7;
-                    final Player player = (Player) damage.getDamager();
+
                     boolean loot_limit=false;
                     if(bitQuest.last_loot_player!=null&&bitQuest.last_loot_player.getUniqueId().toString().equals(player.getUniqueId().toString())) loot_limit=true;
                     // Add EXP
@@ -432,10 +437,48 @@ public class EntityEvents implements Listener {
                                         e1.printStackTrace();
                                     }
                                 }
+			}
+
+                    }//end btc?
+		//add emerald loot by @BitcoinJake09
+		if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("emerald")){
+
+                    boolean loot_limit=false;
+                    if(bitQuest.last_loot_player!=null&&bitQuest.last_loot_player.getUniqueId().toString().equals(player.getUniqueId().toString())) loot_limit=true;
+                    // Add EXP
+                    int exp=level*4;
+                    bitQuest.REDIS.incrBy("experience.raw."+player.getUniqueId().toString(),exp);
+                    bitQuest.setTotalExperience(player);
+                    if(dice==7) {
 
 
-                    }
 
+              if (loot_limit==false && bitQuest.rate_limit==false) {
+                                    try {
+		int emoney=Integer.parseInt(money.toString());//maybe change addEmeralds to a long input?
+		 if (bitQuest.addEmeralds(player,emoney)) {
+                                        System.out.println("[loot]"+player.getDisplayName()+": Emeralds  "+money);
+                                        player.sendMessage(ChatColor.GREEN + "You got " + ChatColor.BOLD + money + ChatColor.GREEN + " Emeralds of loot!");
+                                        // player.playSound(player.getLocation(), Sound.LEVEL_UP, 20, 1);
+                                        if (bitQuest.messageBuilder != null) {
+
+                                            // Create an event
+                                            org.json.JSONObject sentEvent = bitQuest.messageBuilder.event(player.getUniqueId().toString(), "Loot", null);
+
+
+                                            ClientDelivery delivery = new ClientDelivery();
+                                            delivery.addMessage(sentEvent);
+
+                                            MixpanelAPI mixpanel = new MixpanelAPI();
+                                            mixpanel.deliver(delivery);
+                                        }
+				}
+				} catch (Exception e1) {
+                                        e1.printStackTrace();
+                                    }
+				}
+				}
+                          }//end emerald loot...
                 }
 
             } else {
