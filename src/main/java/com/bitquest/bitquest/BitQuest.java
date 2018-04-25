@@ -295,7 +295,7 @@ if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitc
             }
         });
         
-	}//end btc here
+	}//end btc here start Emerald scoreboard by @BitcoinJake09
 	else if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("emerald")){ 
 	 ScoreboardManager scoreboardManager;
                 Scoreboard walletScoreboard;
@@ -309,8 +309,7 @@ if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitc
                 walletScoreboardObjective.setDisplayName(ChatColor.GOLD + ChatColor.BOLD.toString() + "Bit" + ChatColor.GRAY + ChatColor.BOLD.toString() + "Quest");
 	Score score = walletScoreboardObjective.getScore(ChatColor.GREEN + "Ems:"); //Get a fake offline player
 	
-	int EmAmount=countEmeralds(player);
-        score.setScore(EmAmount);
+        score.setScore(countEmeralds(player));
         player.setScoreboard(walletScoreboard);
 	}//end emerald here
 		
