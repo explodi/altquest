@@ -24,7 +24,7 @@ public class CurrencyCommand extends CommandAction {
         //CHANGE CURRENCY BY BITCOINJAKE09
 		 if(cmd.getName().equalsIgnoreCase("currency")) {
 			
-			if((args[0].equalsIgnoreCase("emerald"))||(args[0].equalsIgnoreCase("emerald"))) {
+			if((args[0].equalsIgnoreCase("ems"))||(args[0].equalsIgnoreCase("emerald"))||(args[0].equalsIgnoreCase("emeralds"))) {
 				BitQuest.REDIS.set("currency"+player.getUniqueId().toString(), "emerald");
 			player.sendMessage(ChatColor.GREEN+"Currency changed to " + BitQuest.REDIS.get("currency"+player.getUniqueId().toString()));                        
 
