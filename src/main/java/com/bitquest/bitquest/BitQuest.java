@@ -270,9 +270,13 @@ public class  BitQuest extends JavaPlugin {
     }
     // need to updatedscoreboard to display what currecny player is using
 	public void updateScoreboard(final Player player) throws ParseException, org.json.simple.parser.ParseException, IOException {
-          final User user=new User(this, player);
+         
+if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitcoin")){
+                final User user=new User(this, player);
 
-            
+        user.wallet.getBalance(0, new Wallet.GetBalanceCallback() {
+            @Override
+            public void run(Long balance) {
                 ScoreboardManager scoreboardManager;
                 Scoreboard walletScoreboard;
                 Objective walletScoreboardObjective;
@@ -283,18 +287,26 @@ public class  BitQuest extends JavaPlugin {
                 walletScoreboardObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
                 walletScoreboardObjective.setDisplayName(ChatColor.GOLD + ChatColor.BOLD.toString() + "Bit" + ChatColor.GRAY + ChatColor.BOLD.toString() + "Quest");
-if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitcoin")){
+
                 Score score = walletScoreboardObjective.getScore(ChatColor.GREEN + BitQuest.DENOMINATION_NAME); //Get a fake offline player
-		user.wallet.getBalance(0, new Wallet.GetBalanceCallback() {
-            @Override
-            public void run(Long balance) {
+
                 score.setScore((int) (balance/DENOMINATION_FACTOR));
-		}});
                 player.setScoreboard(walletScoreboard);
-            
+            }
+        });
         
 	}//end btc here
 	else if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("emerald")){ 
+	 ScoreboardManager scoreboardManager;
+                Scoreboard walletScoreboard;
+                Objective walletScoreboardObjective;
+                scoreboardManager = Bukkit.getScoreboardManager();
+                walletScoreboard= scoreboardManager.getNewScoreboard();
+                walletScoreboardObjective = walletScoreboard.registerNewObjective("wallet","dummy");
+
+                walletScoreboardObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+                walletScoreboardObjective.setDisplayName(ChatColor.GOLD + ChatColor.BOLD.toString() + "Bit" + ChatColor.GRAY + ChatColor.BOLD.toString() + "Quest");
 	Score score = walletScoreboardObjective.getScore(ChatColor.GREEN + "Ems:"); //Get a fake offline player
 	
 	int EmAmount=countEmeralds(player);
