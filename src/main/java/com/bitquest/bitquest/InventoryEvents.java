@@ -139,6 +139,8 @@ public class InventoryEvents implements Listener {
                             }
                             final boolean hasOpenSlotsFinal = hasOpenSlots;
                             final long satFinal = sat*BitQuest.DENOMINATION_FACTOR;
+			//add currency falg by @BitcoinJake09
+			if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitcoin")){
                             user.wallet.getBalance(0, new Wallet.GetBalanceCallback() {
                                 @Override
                                 public void run(Long balance) {
@@ -189,8 +191,62 @@ public class InventoryEvents implements Listener {
                                         e.printStackTrace();
                                     }
                                 }
-                            });
+                            }); 
+			}//end bitcoin buy, start emerald buy by @BitcoinJake09
+			else if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("emerald")){
+			BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
+                        scheduler.runTaskAsynchronously(bitQuest, new Runnable() {
+                        @Override
+                        public void run() {
+                                    try {
+                                        if (bitQuest.countEmeralds(player)>=satFinal) {
 
+                                            if (hasOpenSlotsFinal) {
+                                                if (bitQuest.removeEmeralds(player,((int)(satFinal))) == true) {
+                                                    if(clicked.getType() == Material.ENCHANTED_BOOK) bitQuest.books.remove(0);
+
+                                                    ItemStack item = event.getCurrentItem();
+                                                    ItemMeta meta = item.getItemMeta();
+                                                    ArrayList<String> Lore = new ArrayList<String>();
+                                                    meta.setLore(null);
+                                                    item.setItemMeta(meta);
+                                                    player.getInventory().addItem(item);
+                                                    player.sendMessage(ChatColor.GREEN + "You bought " + clicked.getType() + " for " + satFinal / 100);
+
+
+                                                    bitQuest.updateScoreboard(player);
+                                                    if (bitQuest.messageBuilder != null) {
+
+                                                        // Create an event
+                                                        org.json.JSONObject sentEvent = bitQuest.messageBuilder.event(player.getUniqueId().toString(), "Purchase", null);
+                                                        org.json.JSONObject sentCharge = bitQuest.messageBuilder.trackCharge(player.getUniqueId().toString(), satFinal / 100, null);
+
+
+                                                        ClientDelivery delivery = new ClientDelivery();
+                                                        delivery.addMessage(sentEvent);
+                                                        delivery.addMessage(sentCharge);
+
+
+                                                        MixpanelAPI mixpanel = new MixpanelAPI();
+                                                        mixpanel.deliver(delivery);
+                                                    }
+
+                                                } else {
+                                                    player.sendMessage(ChatColor.RED + "Transaction failed. Please try again in a few moments (ERROR 1)");
+                                                }
+                                            } else {
+                                                player.sendMessage(ChatColor.RED + "You don't have space in your inventory");
+                                            }
+                                        } else {
+                                            player.sendMessage(ChatColor.RED + "You don't have enough ems");
+
+                                        }
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }); 
+			}//end emerald buy by @BitcoinJake09
                         } catch (IllegalArgumentException e) {
                             e.printStackTrace();
                             player.sendMessage(ChatColor.RED + "Transaction failed. Please try again in a few moments (ERROR 2)");
