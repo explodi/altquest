@@ -397,7 +397,7 @@ public class EntityEvents implements Listener {
                     Long money = Math.min(BitQuest.rand(1,level),BitQuest.rand(1,level))*bitQuest.DENOMINATION_FACTOR;
                     int dice=BitQuest.rand(1,100);
 		//btc loot modified with flag by @BitcoinJake09
-		if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitcoin")){
+		if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase(BitQuest.DENOMINATION_NAME)){
                     if(bitQuest.wallet_balance_cache>100*bitQuest.DENOMINATION_FACTOR) dice=BitQuest.rand(1,20);
                     if(bitQuest.wallet_balance_cache>1000*bitQuest.DENOMINATION_FACTOR) dice=7;
 
@@ -845,6 +845,34 @@ public class EntityEvents implements Listener {
 	void onExplode(EntityExplodeEvent event) {
 		event.setCancelled(true);
 	}
+	/* need to fix this, never gotit working, but would basically only explode if plots around it are wilderness?? by @BitcoinJake09
+	@EventHandler
+	void onExplode(EntityExplodeEvent event) {
+		//if (REDIS.get("chunk" + location.getChunk().getX() + "," + location.getChunk().getZ() + "owner").equals(		
+		final int x = event.getLocation().getChunk().getX();
+       		final int z = event.getLocation().getChunk().getZ();
+                if (AltQuest.REDIS.get("chunk" + x + "," + z + "owner") == null) {		
+			if (AltQuest.REDIS.get("chunk" + (x+1) + "," + z + "owner") == null) {		
+				if (AltQuest.REDIS.get("chunk" + (x-1) + "," + z + "owner") == null) {		
+					if (AltQuest.REDIS.get("chunk" + x + "," + (z+1) + "owner") == null) {		
+						if (AltQuest.REDIS.get("chunk" + x + "," + (z-1) + "owner") == null) {		
+							if (AltQuest.REDIS.get("chunk" + (x+1) + "," + (z+1) + "owner") == null) {		
+								if (AltQuest.REDIS.get("chunk" + (x-1) + "," + (z-1) + "owner") == null) {		
+									if (AltQuest.REDIS.get("chunk" + (x+1) + "," + (z-1) + "owner") == null) {		
+										if (AltQuest.REDIS.get("chunk" + (x-1) + "," + (z+1) + "owner") == null) {		
+											event.setCancelled(false);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		event.setCancelled(true);
+	}
+	*/
 
 }
 

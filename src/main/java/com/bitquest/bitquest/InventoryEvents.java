@@ -140,7 +140,7 @@ public class InventoryEvents implements Listener {
                             final boolean hasOpenSlotsFinal = hasOpenSlots;
                             final long satFinal = sat*BitQuest.DENOMINATION_FACTOR;
 			//add currency falg by @BitcoinJake09
-			if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitcoin")){
+			if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase(BitQuest.DENOMINATION_NAME)){
                             user.wallet.getBalance(0, new Wallet.GetBalanceCallback() {
                                 @Override
                                 public void run(Long balance) {
@@ -199,10 +199,10 @@ public class InventoryEvents implements Listener {
                         @Override
                         public void run() {
                                     try {
-                                        if (bitQuest.countEmeralds(player)>=satFinal) {
+                                        if (bitQuest.countEmeralds(player)>=satFinal/ 100) {
 
                                             if (hasOpenSlotsFinal) {
-                                                if (bitQuest.removeEmeralds(player,((int)(satFinal))) == true) {
+                                                if (bitQuest.removeEmeralds(player,((int)(satFinal/ 100))) == true) {
                                                     if(clicked.getType() == Material.ENCHANTED_BOOK) bitQuest.books.remove(0);
 
                                                     ItemStack item = event.getCurrentItem();

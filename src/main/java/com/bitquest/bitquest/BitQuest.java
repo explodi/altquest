@@ -271,7 +271,7 @@ public class  BitQuest extends JavaPlugin {
     // need to updatedscoreboard to display what currecny player is using
 	public void updateScoreboard(final Player player) throws ParseException, org.json.simple.parser.ParseException, IOException {
          
-if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitcoin")){
+if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase(BitQuest.DENOMINATION_NAME)){
                 final User user=new User(this, player);
 
         user.wallet.getBalance(0, new Wallet.GetBalanceCallback() {
@@ -296,8 +296,8 @@ if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitc
         });
         
 	}//end btc here start Emerald scoreboard by @BitcoinJake09
-	else if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("emerald")){ 
-	 ScoreboardManager scoreboardManager;
+	else if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("emerald")){ 
+		ScoreboardManager scoreboardManager;
                 Scoreboard walletScoreboard;
                 Objective walletScoreboardObjective;
                 scoreboardManager = Bukkit.getScoreboardManager();
@@ -311,6 +311,7 @@ if (REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("bitc
 	
         score.setScore(countEmeralds(player));
         player.setScoreboard(walletScoreboard);
+
 	}//end emerald here
 		
 	

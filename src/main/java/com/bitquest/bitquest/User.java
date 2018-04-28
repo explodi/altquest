@@ -31,7 +31,8 @@ public class User {
         this.player=player;
         this.bitQuest = plugin;
         this.wallet=new Wallet(this.bitQuest, this.player.getUniqueId().toString());
-	BitQuest.REDIS.set("currency"+player.getUniqueId().toString(), "bitcoin");
+	if(BitQuest.REDIS.get("currency"+player.getUniqueId().toString())==null)
+	BitQuest.REDIS.set("currency"+player.getUniqueId().toString(), BitQuest.DENOMINATION_NAME);
 //        if(BitQuest.REDIS.exists("hd:address:"+this.player.getUniqueId().toString())&&BitQuest.REDIS.exists("hd:path:"+this.player.getUniqueId().toString())&&BitQuest.REDIS.exists("hd:public:"+this.player.getUniqueId().toString())) {
 //            this.wallet=new Wallet(
 //                    BitQuest.REDIS.get("hd:address:"+this.player.getUniqueId().toString()),
