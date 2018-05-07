@@ -214,7 +214,7 @@ public class InventoryEvents implements Listener {
                                                     player.sendMessage(ChatColor.GREEN + "You bought " + clicked.getType() + " for " + satFinal / 100);
 
 
-                                                    bitQuest.updateScoreboard(player);
+                                                    //bitQuest.updateScoreboard(player);
                                                     if (bitQuest.messageBuilder != null) {
 
                                                         // Create an event

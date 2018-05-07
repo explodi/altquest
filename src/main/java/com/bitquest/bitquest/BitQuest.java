@@ -63,6 +63,7 @@ public class  BitQuest extends JavaPlugin {
     public final static int BITCOIN_NODE_PORT = System.getenv("BITCOIN_NODE_PORT") != null ? Integer.parseInt(System.getenv("BITCOIN_NODE_PORT")) : 18332;
     public final static Long DENOMINATION_FACTOR = System.getenv("DENOMINATION_FACTOR") != null ? Long.parseLong(System.getenv("DENOMINATION_FACTOR")) : 100L;
     public final static String DENOMINATION_NAME = System.getenv("DENOMINATION_NAME") != null ? System.getenv("DENOMINATION_NAME") : "Bits";
+    public final static String SERVERDISPLAY_NAME = System.getenv("SERVERDISPLAY_NAME") != null ? System.getenv("SERVERDISPLAY_NAME") : "Bit";
     public final static String BITCOIN_NODE_USERNAME = System.getenv("BITCOIN_NODE_USERNAME");
     public final static String BITCOIN_NODE_PASSWORD = System.getenv("BITCOIN_NODE_PASSWORD");
     public final static String DISCORD_HOOK_URL = System.getenv("DISCORD_HOOK_URL");
@@ -270,21 +271,24 @@ public class  BitQuest extends JavaPlugin {
     }
     // need to updatedscoreboard to display what currecny player is using
 	public void updateScoreboard(final Player player) throws ParseException, org.json.simple.parser.ParseException, IOException {
-         
-if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase(BitQuest.DENOMINATION_NAME)){
                 final User user=new User(this, player);
 
-        user.wallet.getBalance(0, new Wallet.GetBalanceCallback() {
-            @Override
-            public void run(Long balance) {
-                ScoreboardManager scoreboardManager;
+ 		ScoreboardManager scoreboardManager;
                 Scoreboard walletScoreboard;
                 Objective walletScoreboardObjective;
                 scoreboardManager = Bukkit.getScoreboardManager();
                 walletScoreboard= scoreboardManager.getNewScoreboard();
                 walletScoreboardObjective = walletScoreboard.registerNewObjective("wallet","dummy");
 
-                walletScoreboardObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+                walletScoreboardObjective.setDisplaySlot(DisplaySlot.SIDEBAR);         
+
+if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase(BitQuest.DENOMINATION_NAME)){
+
+
+        user.wallet.getBalance(0, new Wallet.GetBalanceCallback() {
+            @Override
+            public void run(Long balance) {
+               
 
                 walletScoreboardObjective.setDisplayName(ChatColor.GOLD + ChatColor.BOLD.toString() + "Bit" + ChatColor.GRAY + ChatColor.BOLD.toString() + "Quest");
 
@@ -295,26 +299,26 @@ if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreC
             }
         });
         
-	}//end btc here start Emerald scoreboard by @BitcoinJake09
+	}//end BitQuest.DENOMINATION_NAME here start Emerald scoreboard by @BitcoinJake09
 	else if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreCase("emerald")){ 
-		ScoreboardManager scoreboardManager;
-                Scoreboard walletScoreboard;
-                Objective walletScoreboardObjective;
-                scoreboardManager = Bukkit.getScoreboardManager();
-                walletScoreboard= scoreboardManager.getNewScoreboard();
-                walletScoreboardObjective = walletScoreboard.registerNewObjective("wallet","dummy");
-
-                walletScoreboardObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+		 BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
+scheduler.runTaskAsynchronously(this, new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
 
                 walletScoreboardObjective.setDisplayName(ChatColor.GOLD + ChatColor.BOLD.toString() + "Bit" + ChatColor.GRAY + ChatColor.BOLD.toString() + "Quest");
 	Score score = walletScoreboardObjective.getScore(ChatColor.GREEN + "Ems:"); //Get a fake offline player
 	
         score.setScore(countEmeralds(player));
         player.setScoreboard(walletScoreboard);
-
+} catch (Exception e) {
+                         System.out.println("problems in updatescoreboard");
+                          }
+			} });
 	}//end emerald here
 		
-	
+
     } 
     
     public void teleportToSpawn(Player player) {
@@ -544,7 +548,7 @@ if (BitQuest.REDIS.get("currency"+player.getUniqueId().toString()).equalsIgnoreC
                         BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
                         final BitQuest bitQuest = this;
 			//REDIS.set("currency"+player.getUniqueId().toString(), "emerald");
-			if (REDIS.get("currency"+player.getUniqueId().toString())==("bitcoin")){
+			if (REDIS.get("currency"+player.getUniqueId().toString())==(DENOMINATION_NAME)){
                         user.wallet.getBalance(0, new Wallet.GetBalanceCallback() {
                             @Override
                             public void run(Long balance) {
